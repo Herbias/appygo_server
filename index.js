@@ -752,9 +752,15 @@ app.post("/login", async (req, res) => {
 });
 
 app.get("/test", async (req, res) => {
+  let result = await Database.Execute((database) =>
+    database.query(`SELECT * FROM order`).then((row) => {
+      return JSON.parse(JSON.stringify(row))[0];
+    })
+  );
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
-  res.json({ msg: "hello" });
+  res.json(result);
 });
 
 io.on("connection", (socket) => {
