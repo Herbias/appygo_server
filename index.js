@@ -3,6 +3,8 @@ var http = require("http").Server(app);
 var io = require("socket.io")(http);
 var bodyParser = require("body-parser");
 
+const port = process.env.PORT || 3001;
+
 var cors = require("cors");
 var Database = require("./Database/Database.js");
 const { database, user } = require("./Database/config.js");
@@ -765,6 +767,6 @@ io.on("connection", (socket) => {
   });
 });
 
-http.listen(3001, function () {
+http.listen(port, function () {
   console.log("listening on *:3001");
 });
