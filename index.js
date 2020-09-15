@@ -567,6 +567,10 @@ app.get("/check/voucher", async (req, res) => {
       .then((row) => {
         return JSON.parse(JSON.stringify(row))[0];
       })
+      .catch((err) => {
+        console.log(err);
+        throw err;
+      })
   );
 
   res.setHeader("Access-Control-Allow-Origin", "*");
