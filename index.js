@@ -344,10 +344,7 @@ app.put("/update/cart/", async (req, res) => {
 
 app.post("/delete/cart", async (req, res) => {
   const { id, categoryId, user } = req.body;
-  console.log(
-    `UPDATE wishlist SET deleted = 1 WHERE id = ${id} AND category =${categoryId} AND userid =${user.id} AND userType=\'${user.type}\';`
-  );
-  // `UPDATE wishlist SET quantity =
+
   await Database.Execute((database) =>
     database.query(
       `UPDATE wishlist SET deleted = 1 WHERE product = ${id} AND category =${categoryId} AND userid =${user.id} AND userType=\'${user.type}\';`
@@ -364,13 +361,11 @@ app.post("/delete/cart", async (req, res) => {
       })
   );
 
-  console.log(count);
   res.json(count);
 });
 
 app.post("/get/cart/itemscount", async (req, res) => {
   const { userId, userType } = req.body;
-  console.log(req.body);
 
   const statement = `SELECT count(DISTINCT(product)) as wishlistItems FROM wishlist where userid = ${userId} and userType = '${userType}' AND deleted = 0 `;
 
@@ -516,7 +511,6 @@ app.post("/get/cart/items", async (req, res) => {
 });
 
 app.post("/get/order/detail", async (req, res) => {
-  console.log(req.body);
   const { userid, ordercode } = req.body;
 
   let detail = await Database.Execute((database) =>
