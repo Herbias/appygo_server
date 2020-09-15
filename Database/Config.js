@@ -1,8 +1,8 @@
 var config = {
-  host: `remotemysql\.com`,
+  host: `remotemysql.com`,
   user: "mwEtqlW5GX",
   password: "KtrGfd9Abo",
-  database: "appygo",
+  database: "mwEtqlW5GX",
   port: "3306",
 };
 
