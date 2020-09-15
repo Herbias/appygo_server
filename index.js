@@ -753,8 +753,8 @@ app.post("/login", async (req, res) => {
 
 app.get("/test", async (req, res) => {
   let result = await Database.Execute((database) =>
-    database.query(`SELECT * FROM order`).then((row) => {
-      return JSON.parse(JSON.stringify(row))[0];
+    database.query(`SELECT * FROM \`order\``).then((row) => {
+      return JSON.parse(JSON.stringify(row));
     })
   );
 
