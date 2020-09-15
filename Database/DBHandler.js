@@ -1,34 +1,38 @@
-var mysql = require('mysql');
-var config = require('./config.js');
+var mysql = require("mysql");
+var config = require("./Config.js");
 
 var connection = mysql.createConnection(config);
 
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
-exports.Login = function(data, callback){
+exports.Login = function (data, callback) {
   var sql = `Call GetUserLevel(?)`;
   var result = {};
-  connection.query(sql, data.id_num, function(error, results, fields){
-    if(error){
+  connection.query(sql, data.id_num, function (error, results, fields) {
+    if (error) {
       console.log(error.message);
-    }else{
+    } else {
       results[0].forEach((results) => {
-        result = {user_level : results.user_level};
+        result = { user_level: results.user_level };
       });
 
       switch (result.user_level) {
-        case 'Student':
+        case "Student":
           sql = `Call GetUserDetails(?,?)`;
 
-          connection.query(sql, [data.id_num, data.password], function(error, results, fields){
-            if(error){
-              result = { success : "false" };
+          connection.query(sql, [data.id_num, data.password], function (
+            error,
+            results,
+            fields
+          ) {
+            if (error) {
+              result = { success: "false" };
               return callback(result);
             }
-            if(results.length){
+            if (results.length) {
               results[0].forEach((results) => {
                 result = {
-                  success : "true",
+                  success: "true",
                   id: results.user_id,
                   username: results.user_name,
                   userlevel: results.user_level_name,
@@ -39,28 +43,31 @@ exports.Login = function(data, callback){
                   picture: results.user_picture,
                   department: results.user_department,
                   course: results.user_course,
-                  yearLevel: results.user_year_level
+                  yearLevel: results.user_year_level,
                 };
               });
               return callback(result);
-            }
-            else{
-              return callback({success: "false"});
+            } else {
+              return callback({ success: "false" });
             }
           });
           break;
-        case 'Instructor':
+        case "Instructor":
           sql = `Call GetUserDetails(?, ?)`;
 
-          connection.query(sql, [data.id_num, data.password], function(error, results, fields){
-            if(error){
-              result = {success: "false"};
+          connection.query(sql, [data.id_num, data.password], function (
+            error,
+            results,
+            fields
+          ) {
+            if (error) {
+              result = { success: "false" };
               return callback(result);
             }
-            if(results.length){
+            if (results.length) {
               results[0].forEach((results) => {
                 result = {
-                  success : "true",
+                  success: "true",
                   id: results.user_id,
                   username: results.user_name,
                   userlevel: results.user_level_name,
@@ -69,16 +76,15 @@ exports.Login = function(data, callback){
                   middleName: results.user_middle_name,
                   lastName: results.user_last_name,
                   picture: results.user_picture,
-                  department: results.user_department
+                  department: results.user_department,
                 };
               });
               return callback(result);
-            }
-            else{
-              return callback({success: "false"});
+            } else {
+              return callback({ success: "false" });
             }
           });
-        break;
+          break;
         default:
           break;
       }
@@ -86,59 +92,65 @@ exports.Login = function(data, callback){
   });
 };
 
-exports.GetContacts = function(data, callback){
+exports.GetContacts = function (data, callback) {
   var sql = `Call GetContacts(?, ?)`;
 
-  var result = {People : []};
+  var result = { People: [] };
 
-  connection.query(sql, [data.username, data.userlevel], function(error, results, fields){
-    if(error){
+  connection.query(sql, [data.username, data.userlevel], function (
+    error,
+    results,
+    fields
+  ) {
+    if (error) {
       console.log(error.message);
     }
-    if(results.length){
-      for(var i = 0; i < results[0].length; i++){
+    if (results.length) {
+      for (var i = 0; i < results[0].length; i++) {
         var person = {
           username: results[0][i].username,
           userlevel: results[0][i].userlevel,
           firstname: results[0][i].firstname,
           middlename: results[0][i].middlename,
           lastname: results[0][i].lastname,
-          picture: results[0][i].picture
+          picture: results[0][i].picture,
         };
         result.People.push(person);
       }
       return callback(result);
-    }
-    else{
-      console.log("No results found!")
+    } else {
+      console.log("No results found!");
     }
   });
 };
 
-exports.GetMessage = async function(data, callback){
-    var sql = `Call GetMessage(?, ?)`;
-    var result = [];
+exports.GetMessage = async function (data, callback) {
+  var sql = `Call GetMessage(?, ?)`;
+  var result = [];
 
-    connection.query(sql, [data.user1, data.user2], function(error, results, fields){
-      if(error){
-        console.log(error.message);
+  connection.query(sql, [data.user1, data.user2], function (
+    error,
+    results,
+    fields
+  ) {
+    if (error) {
+      console.log(error.message);
+    }
+    if (results.length) {
+      for (var i = 0; i < results[0].length; i++) {
+        var message = {
+          mail_id: results[0][i].mail_id,
+          message_content: results[0][i].message_content,
+          sender: results[0][i].sender,
+          reciever: results[0][i].receiver,
+          mail_sent_date: results[0][i].mail_sent_date,
+        };
+        result.push(message);
       }
-      if(results.length){
-        for(var i = 0; i < results[0].length; i++){
-          var message = {
-            mail_id: results[0][i].mail_id,
-            message_content: results[0][i].message_content,
-            sender: results[0][i].sender,
-            reciever: results[0][i].receiver,
-            mail_sent_date: results[0][i].mail_sent_date,
-          };
-          result.push(message);
-        }
-        return callback(result);
-      }
-      else{
-        console.log("No results found!")
-      }
-    });
+      return callback(result);
+    } else {
+      console.log("No results found!");
+    }
+  });
 };
 //module.exports = "hello";
