@@ -7,7 +7,7 @@ const port = process.env.PORT || 3001;
 
 var cors = require("cors");
 var Database = require("./Database/Database.js");
-const { database, user } = require("./Database/config.js");
+const { database, user } = require("./Database/Config.js");
 const { randomBytes } = require("crypto");
 const { cpuUsage } = require("process");
 const { json } = require("body-parser");
