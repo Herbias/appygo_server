@@ -747,7 +747,7 @@ app.post("/login", async (req, res) => {
   res.json(result);
 });
 
-app.get("/login", async (req, res) => {
+app.get("/test", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
   res.json({ msg: "hello" });
