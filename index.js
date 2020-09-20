@@ -21,7 +21,7 @@ Database.execute = function (callback) {
   );
 };
 
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 
 // let visitor = 0;
@@ -106,7 +106,9 @@ app.get("/get/product/:category", async (req, res) => {
 
   var a = [];
   filters.forEach((obj) => {
-    a.push(`join ${obj.table} on ${obj.table}.id = ${category}.${obj.table}`);
+    a.push(
+      `join \`${obj.table}\` on \`${obj.table}\`.id = \`${category}\`.\`${obj.table}\``
+    );
   });
 
   var b = [];
@@ -114,9 +116,9 @@ app.get("/get/product/:category", async (req, res) => {
     b.push(`${obj.table}.name as ${obj.table}`);
   });
 
-  var c = `select ${category}.id, ${category}.name, ${category}.price, image.name as image, category.id as categoryId, category.name as categoryName, ${b.join(
+  var c = `select \`${category}\`.id, \`${category}\`.name, \`${category}\`.price, image.name as image, category.id as categoryId, category.name as categoryName, ${b.join(
     ", "
-  )} from ${category} join image on image.id = ${category}.image join category on category.id = ${category}.category ${a.join(
+  )} from \`${category}\` join image on image.id = \`${category}\`.image join category on category.id = \`${category}\`.category ${a.join(
     " "
   )}`;
 
@@ -168,7 +170,7 @@ app.get("/get/products/filters/:category", async (req, res) => {
   let b = [];
 
   filters.map(async (filter) => {
-    let stmt = `SELECT DISTINCT(${filter.table}.id), ${filter.table}.name FROM ${category} JOIN ${filter.table} ON ${filter.table}.id = ${category}.${filter.table}`;
+    let stmt = `SELECT DISTINCT(\`${filter.table}\`.id), \`${filter.table}\`.name FROM \`${category}\` JOIN \`${filter.table}\` ON \`${filter.table}\`.id = \`${category}\`.\`${filter.table}\``;
     a.push(stmt);
   });
 
@@ -363,14 +365,11 @@ app.post("/delete/cart", async (req, res) => {
         return rows[0].wishlistItems;
       })
   );
-
-  console.log(count);
   res.json(count);
 });
 
 app.post("/get/cart/itemscount", async (req, res) => {
   const { userId, userType } = req.body;
-  console.log(req.body);
 
   const statement = `SELECT count(DISTINCT(product)) as wishlistItems FROM wishlist where userid = ${userId} and userType = '${userType}' AND deleted = 0 `;
 
@@ -380,12 +379,15 @@ app.post("/get/cart/itemscount", async (req, res) => {
     })
   );
 
+  console.log(numOfItems);
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
-  res.json(numOfItems[0].wishlistItems);
+  res.json(numOfItems[0].wishlistItems ? numOfItems[0].wishlistItems : 0);
 });
 
 app.post("/get/cart/items", async (req, res) => {
+  console.log(req.body);
   const { userId, userType } = req.body;
 
   const a = `SELECT DISTINCT(category.name) AS name, category.id as id FROM wishlist JOIN category ON category.id = wishlist.category WHERE wishlist.userid = ${userId} AND wishlist.userType = '${userType}'`;
@@ -558,7 +560,8 @@ app.post("/get/order/detail", async (req, res) => {
         return JSON.parse(JSON.stringify(row));
       })
   );
-
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.status(200);
   res.json({ detail, products, vouchers, history });
 });
 
