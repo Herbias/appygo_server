@@ -5,10 +5,11 @@ var bodyParser = require("body-parser");
 
 var cors = require("cors");
 var Database = require("./Database/Database.js");
-const { database, user } = require("./Database/config.js");
+const { database, user } = require("./Database/Config.js");
 const { randomBytes } = require("crypto");
 const { cpuUsage } = require("process");
 const { json } = require("body-parser");
+const { log } = require("console");
 
 Database.execute = function (callback) {
   const database = new Database();
@@ -37,6 +38,7 @@ Database.Execute((database) =>
 
 app.get("/get/product/detail", async (req, res) => {
   const { category, id, brand } = req.query;
+  console.log(req.query);
   let filters = await Database.Execute((database) =>
     database
       .query(
@@ -52,19 +54,21 @@ app.get("/get/product/detail", async (req, res) => {
 
   var a = [];
   filters.forEach((obj) => {
-    a.push(`join ${obj.table} on ${obj.table}.id = ${category}.${obj.table}`);
+    a.push(
+      `join \`${obj.table}\` on \`${obj.table}\`.\`id\` = \`${category}\`.\`${obj.table}\``
+    );
   });
 
   var b = [];
   filters.forEach((obj) => {
-    b.push(`${obj.table}.name as ${obj.table}`);
+    b.push(`\`${obj.table}\`.\`name\` as \`${obj.table}\``);
   });
 
-  var c = `select ${category}.id, ${category}.name, ${category}.price, image.name as image, category.id as categoryId, category.name as categoryName, ${b.join(
+  var c = `select \`${category}\`.\`id\`, \`${category}\`.\`name\`, \`${category}\`.\`price\`, \`image\`.\`name\`as \`image\`, \`category\`.\`id\` as \`categoryId\`, \`category\`.\`name\` as \`categoryName\`, ${b.join(
     ", "
-  )} from ${category} join image on image.id = ${category}.image join category on category.id = ${category}.category ${a.join(
+  )} from \`${category}\` join \`image\` on \`image\`.\`id\` = \`${category}\`.\`image\` join \`category\` on \`category\`.\`id\` = \`${category}\`.\`category\` ${a.join(
     " "
-  )} WHERE ${category}.id = ${id}`;
+  )} WHERE \`${category}\`.\`id\` = ${id}`;
 
   const product = await Database.Execute((database) =>
     database
@@ -76,6 +80,13 @@ app.get("/get/product/detail", async (req, res) => {
         return;
       })
   );
+
+  console.log(c);
+
+  // let buffer = new Buffer.from(product[0]["image"]["data"], "base64");
+  // console.log(buffer.toString("base64"));
+
+  // product[0]["image"] = buffer.toString("base64");
 
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
@@ -113,7 +124,7 @@ app.get("/get/product/:category", async (req, res) => {
 
   var b = [];
   filters.forEach((obj) => {
-    b.push(`${obj.table}.name as ${obj.table}`);
+    b.push(`\`${obj.table}\`.name as \`${obj.table}\``);
   });
 
   var c = `select \`${category}\`.id, \`${category}\`.name, \`${category}\`.price, image.name as image, category.id as categoryId, category.name as categoryName, ${b.join(
@@ -135,7 +146,7 @@ app.get("/get/product/:category", async (req, res) => {
 
   let orderBy = query.sort && query.sort == "High to Low" ? "desc" : "asc";
 
-  Database.Execute((database) =>
+  const result = await Database.Execute((database) =>
     database
       .query(
         query["sort"]
@@ -143,13 +154,20 @@ app.get("/get/product/:category", async (req, res) => {
           : statement
       )
       .then((rows) => {
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.send(rows);
+        return rows;
       })
       .catch((err) => {
-        return;
+        return err;
       })
   );
+
+  // for (let i = 0; i <= result.length - 1; i++) {
+  //   let buffer = new Buffer.from(result[i]["image"], "base64");
+  //   result[i]["image"] = buffer.toString("base64");
+  // }
+
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.send(result);
 });
 
 app.get("/get/products/filters/:category", async (req, res) => {
@@ -346,10 +364,7 @@ app.put("/update/cart/", async (req, res) => {
 
 app.post("/delete/cart", async (req, res) => {
   const { id, categoryId, user } = req.body;
-  console.log(
-    `UPDATE wishlist SET deleted = 1 WHERE id = ${id} AND category =${categoryId} AND userid =${user.id} AND userType=\'${user.type}\';`
-  );
-  // `UPDATE wishlist SET quantity =
+
   await Database.Execute((database) =>
     database.query(
       `UPDATE wishlist SET deleted = 1 WHERE product = ${id} AND category =${categoryId} AND userid =${user.id} AND userType=\'${user.type}\';`
@@ -379,15 +394,12 @@ app.post("/get/cart/itemscount", async (req, res) => {
     })
   );
 
-  console.log(numOfItems);
-
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
   res.json(numOfItems[0].wishlistItems ? numOfItems[0].wishlistItems : 0);
 });
 
 app.post("/get/cart/items", async (req, res) => {
-  console.log(req.body);
   const { userId, userType } = req.body;
 
   const a = `SELECT DISTINCT(category.name) AS name, category.id as id FROM wishlist JOIN category ON category.id = wishlist.category WHERE wishlist.userid = ${userId} AND wishlist.userType = '${userType}'`;
@@ -469,7 +481,7 @@ app.post("/get/cart/items", async (req, res) => {
     e.push(
       `SELECT ${elm.name}.id, ${elm.name}.name, ${
         elm.name
-      }.price, image.name AS image, category.id AS categoryId, category.name AS categoryName, ${
+      }.price, image.byte AS image, category.id AS categoryId, category.name AS categoryName, ${
         columnStrings[0][elm.name]
       }, quantity from wishlist JOIN ${elm.name} ON ${
         elm.name
@@ -512,13 +524,93 @@ app.post("/get/cart/items", async (req, res) => {
     }
   }
 
+  for (let i = 0; i <= items.length - 1; i++) {
+    let buffer = new Buffer.from(items[i]["image"], "base64");
+    items[i]["image"] = buffer.toString("base64");
+  }
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
   res.json(items.length > 0 ? items : false);
 });
 
+app.get("/get/order/:userid", async (req, res) => {
+  const { userid } = req.params;
+
+  const orders = await Database.Execute((database) =>
+    database
+      .query(
+        `SELECT \`id\`, \`code\` FROM \`order\` WHERE \`order\`.\`userid\` = ${userid}`
+      )
+      .then((row) => {
+        return JSON.parse(JSON.stringify(row));
+      })
+  );
+
+  for (let i = 0; i <= orders.length - 1; i++) {
+    orders[i]["status"] = await Database.Execute((database) =>
+      database
+        .query(
+          `SELECT \`orderprogress\`.\`description\` FROM \`orderhistory\` JOIN \`orderprogress\` ON \`orderprogress\`.\`id\` = \`orderhistory\`.\`progress\` WHERE \`orderhistory\`.\`orderid\` = ${orders[i].id}`
+        )
+        .then((rows) => {
+          return rows[rows.length - 1]["description"];
+        })
+    );
+
+    const products = await Database.Execute((database) =>
+      database
+        .query(
+          `SELECT \`quantity\`,\`name\` FROM \`orderproductlist\` WHERE \`orderid\` = ${orders[i].id}`
+        )
+        .then((rows) => {
+          return JSON.parse(JSON.stringify(rows));
+        })
+    );
+
+    let description = "";
+
+    products.forEach((elm) => {
+      description += `${elm.quantity} x ${elm.name} `;
+    });
+
+    orders[i]["description"] = description;
+
+    const subTotal = await Database.Execute((database) =>
+      database
+        .query(
+          `SELECT SUM(\`price\`) as \`subtotal\` FROM \`orderproductlist\` WHERE \`orderid\` = ${orders[i].id}`
+        )
+        .then((rows) => {
+          return JSON.parse(JSON.stringify(rows[0]["subtotal"]));
+        })
+    );
+
+    const voucherlist = await Database.Execute((database) =>
+      database
+        .query(
+          `SELECT \`percentage\`, \`rate\` FROM \`ordervoucherlist\` JOIN \`voucher\` ON \`voucher\`.\`id\` = \`ordervoucherlist\`.\`voucherid\` WHERE \`ordervoucherlist\`.\`orderid\` = ${orders[i].id}`
+        )
+        .then((rows) => {
+          return JSON.parse(JSON.stringify(rows));
+        })
+    );
+
+    let discount = 0;
+
+    voucherlist.forEach((elm) => {
+      discount += elm.percentage ? subTotal * elm.rate : elm.rate;
+    });
+
+    orders[i]["total"] = subTotal - discount;
+  }
+
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.status(200);
+  res.json(orders);
+});
+
 app.post("/get/order/detail", async (req, res) => {
-  console.log(req.body);
   const { userid, ordercode } = req.body;
 
   let detail = await Database.Execute((database) =>
@@ -560,6 +652,7 @@ app.post("/get/order/detail", async (req, res) => {
         return JSON.parse(JSON.stringify(row));
       })
   );
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
   res.json({ detail, products, vouchers, history });
@@ -644,6 +737,19 @@ app.post("/create/order", async (req, res) => {
   let voucherlist = [];
 
   order.forEach((elm) => {
+    Database.Execute((database) =>
+      database.query(
+        `UPDATE 
+        \`wishlist\` 
+        SET \`deleted\` = 1 
+        WHERE 
+        \`userid\` = \'${userid}\' AND 
+        \`userType\` = \'${usertype}\' AND 
+        \`category\`= \'${elm.data.categoryId}\' AND 
+        \`product\` = \'${elm.data.id}\' AND 
+        \`deleted\` = 0`
+      )
+    );
     orderlist.push(
       `(\'${orderid}\', \'${elm.data.name}\', \'${elm.data.quantity}\', \'${elm.data.price}\')`
     );
@@ -687,9 +793,19 @@ app.post("/create/order", async (req, res) => {
       })
   );
 
+  const count = await Database.Execute((database) =>
+    database
+      .query(
+        `SELECT count(DISTINCT(product)) as wishlistItems FROM wishlist where userid = ${userid} and userType = '${usertype}' AND deleted = 0 `
+      )
+      .then((rows) => {
+        return rows[0].wishlistItems;
+      })
+  );
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
-  res.json({ ordercode });
+  res.json({ ordercode, count });
 });
 
 app.post("/create/account", async (req, res) => {
@@ -755,7 +871,7 @@ app.post("/login", async (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  console.log("a user is connected " + visitor);
+  // console.log("a user is connected " + visitor);
 
   socket.on("visit", async (data) => {
     visitor += 1;

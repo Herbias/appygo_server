@@ -1,5 +1,5 @@
 const mysql = require("mysql");
-var config = require("./config.js");
+var config = require("./Config.js");
 
 module.exports = class Database {
   constructor() {
