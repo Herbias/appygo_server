@@ -38,7 +38,7 @@ Database.Execute((database) =>
 
 app.get("/get/product/detail", async (req, res) => {
   const { category, id, brand } = req.query;
-  console.log(req.query);
+
   let filters = await Database.Execute((database) =>
     database
       .query(
@@ -48,7 +48,7 @@ app.get("/get/product/detail", async (req, res) => {
         return JSON.parse(JSON.stringify(rows));
       })
       .catch((err) => {
-        console.log(err);
+        return err;
       })
   );
 
@@ -81,8 +81,6 @@ app.get("/get/product/detail", async (req, res) => {
       })
   );
 
-  console.log(c);
-
   // let buffer = new Buffer.from(product[0]["image"]["data"], "base64");
   // console.log(buffer.toString("base64"));
 
@@ -111,7 +109,7 @@ app.get("/get/product/:category", async (req, res) => {
         return JSON.parse(JSON.stringify(rows));
       })
       .catch((err) => {
-        console.log(err);
+        return err;
       })
   );
 
@@ -181,7 +179,9 @@ app.get("/get/products/filters/:category", async (req, res) => {
       .then((rows) => {
         return JSON.parse(JSON.stringify(rows));
       })
-      .catch((err) => console.log(err))
+      .catch((err) => {
+        return err;
+      })
   );
 
   let a = [];
@@ -409,7 +409,9 @@ app.post("/get/cart/items", async (req, res) => {
       .then((row) => {
         return JSON.parse(JSON.stringify(row));
       })
-      .catch((err) => console.log(err))
+      .catch((err) => {
+        return err;
+      })
   );
 
   let b = [];
@@ -423,7 +425,9 @@ app.post("/get/cart/items", async (req, res) => {
             let data = JSON.parse(JSON.stringify(row));
             return { [elm.name]: data };
           })
-          .catch((err) => console.log(err))
+          .catch((err) => {
+            return err;
+          })
       )
     );
   });
@@ -441,7 +445,7 @@ app.post("/get/cart/items", async (req, res) => {
       let filters = elm[key];
       let columns = [];
       filters.forEach((obj) =>
-        columns.push(`${obj.table}.name AS ${obj.table}`)
+        columns.push(`\`${obj.table}\`.\`name\` AS \`${obj.table}\``)
       );
       data = { [key]: columns };
     });
@@ -454,7 +458,9 @@ app.post("/get/cart/items", async (req, res) => {
       let filters = elm[key];
       let joins = [];
       filters.forEach((obj) =>
-        joins.push(`JOIN ${obj.table} ON ${obj.table}.id = ${key}.${obj.table}`)
+        joins.push(
+          `JOIN \`${obj.table}\` ON \`${obj.table}\`.id = \`${key}\`.\`${obj.table}\``
+        )
       );
       data = { [key]: joins };
     });
@@ -479,15 +485,15 @@ app.post("/get/cart/items", async (req, res) => {
     });
 
     e.push(
-      `SELECT ${elm.name}.id, ${elm.name}.name, ${
+      `SELECT \`${elm.name}\`.id, \`${elm.name}\`.name, \`${
         elm.name
-      }.price, image.byte AS image, category.id AS categoryId, category.name AS categoryName, ${
+      }\`.price, image.name AS image, category.id AS categoryId, category.name AS categoryName, ${
         columnStrings[0][elm.name]
-      }, quantity from wishlist JOIN ${elm.name} ON ${
+      }, quantity from wishlist JOIN \`${elm.name}\` ON \`${
         elm.name
-      }.id = wishlist.product JOIN image ON image.id = ${
+      }\`.id = wishlist.product JOIN image ON image.id = \`${
         elm.name
-      }.image JOIN category ON category.id = ${elm.name}.category ${
+      }\`.image JOIN category ON category.id = \`${elm.name}\`.category ${
         joinStrings[0][elm.name]
       } WHERE wishlist.userid = ${userId} AND wishlist.userType = '${userType}' AND wishlist.category=${
         elm.id
@@ -504,7 +510,9 @@ app.post("/get/cart/items", async (req, res) => {
           .then((row) => {
             return JSON.parse(JSON.stringify(row));
           })
-          .catch((err) => console.log(err))
+          .catch((err) => {
+            return err;
+          })
       )
     );
   }
@@ -524,14 +532,14 @@ app.post("/get/cart/items", async (req, res) => {
     }
   }
 
-  for (let i = 0; i <= items.length - 1; i++) {
-    let buffer = new Buffer.from(items[i]["image"], "base64");
-    items[i]["image"] = buffer.toString("base64");
-  }
+  // for (let i = 0; i <= items.length - 1; i++) {
+  //   let buffer = new Buffer.from(items[i]["image"], "base64");
+  //   items[i]["image"] = buffer.toString("base64");
+  // }
 
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.status(200);
-  res.json(items.length > 0 ? items : false);
+  res.json(items);
 });
 
 app.get("/get/order/:userid", async (req, res) => {
@@ -871,8 +879,6 @@ app.post("/login", async (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  // console.log("a user is connected " + visitor);
-
   socket.on("visit", async (data) => {
     visitor += 1;
 
