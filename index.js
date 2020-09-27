@@ -100,6 +100,8 @@ app.get("/get/product/:category", async (req, res) => {
   const { category } = req.params;
   const query = req.query;
 
+  console.log(query);
+
   let filters = await Database.Execute((database) =>
     database
       .query(
@@ -135,7 +137,7 @@ app.get("/get/product/:category", async (req, res) => {
   Object.keys(query).forEach((key) => {
     if (key == "sort" || key == "search") return;
 
-    d.push(key + ".name = " + `\'${req.query[key]}\'`);
+    d.push(`\`${key}\`.name = \'${req.query[key]}\'`);
   });
 
   if (query["search"]) d.push(`${category}.name LIKE \'%${query["search"]}%\'`);
